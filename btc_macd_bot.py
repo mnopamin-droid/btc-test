@@ -32,13 +32,13 @@ def send_telegram(message):
         print(f"❌ خطا: {e}")
         return False
 
-def get_kucoin_1min_data():
-    """دریافت داده 1 دقیقه‌ای بیت‌کوین از KuCoin"""
+def get_kucoin_4h_data():
+    """دریافت داده 4 ساعته بیت‌کوین از KuCoin"""
     try:
         url = "https://api.kucoin.com/api/v1/market/candles"
         params = {
             "symbol": "BTC-USDT",
-            "type": "1min",
+            "type": "4hour",
             "limit": 100
         }
         response = requests.get(url, params=params, timeout=15)
@@ -49,7 +49,7 @@ def get_kucoin_1min_data():
                 candles = data['data']
                 prices = [float(candle[2]) for candle in candles]
                 prices.reverse()
-                print(f"✅ دریافت {len(prices)} کندل 1 دقیقه‌ای از KuCoin")
+                print(f"✅ دریافت {len(prices)} کندل 4 ساعته از KuCoin")
                 print(f"💰 آخرین قیمت: ${prices[-1]:,.2f}")
                 return prices
         print(f"❌ خطا از KuCoin: {response.status_code}")
@@ -85,56 +85,79 @@ def check_cross(macd_line, signal_line):
 
 def main():
     print("=" * 50)
-    print("🚀 ربات تست کراس مکدی بیت‌کوین (تایم‌فریم 1 دقیقه)")
+    print("🚀 ربات کراس مکدی بیت‌کوین (تایم‌فریم 4 ساعته)")
     print(f"⏰ زمان اجرا: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 50)
     
     # دریافت داده
-    prices = get_kucoin_1min_data()
+    prices = get_kucoin_4h_data()
     if not prices:
-        send_telegram("⚠️ خطا در دریافت داده از KuCoin (تست 1 دقیقه)")
+        send_telegram("⚠️ خطا در دریافت داده از KuCoin")
         return
     
     # محاسبه MACD
     macd, signal = calculate_macd(prices)
     
+    # محاسبه مقادیر
+    macd_val = macd.iloc[-1]
+    signal_val = signal.iloc[-1]
+    diff = macd_val - signal_val
+    price = prices[-1]
+    time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
     # نمایش در لاگ
-    print(f"\n📊 MACD Line: {macd.iloc[-1]:.4f}")
-    print(f"📊 Signal Line: {signal.iloc[-1]:.4f}")
-    print(f"📊 تفاوت: {(macd.iloc[-1] - signal.iloc[-1]):.4f}")
+    print(f"\n📊 MACD Line: {macd_val:.4f}")
+    print(f"📊 Signal Line: {signal_val:.4f}")
+    print(f"📊 تفاوت: {diff:.4f}")
     
     # بررسی کراس
     cross_type = check_cross(macd, signal)
     
+    # ساخت پیام وضعیت
     if cross_type:
-        price = prices[-1]
-        time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        # ساخت پیام تلگرامی
-        message = f"""<b>🔔 سیگنال جدید بیت‌کوین (تست)</b>
+        message = f"""<b>🔔 سیگنال جدید بیت‌کوین!</b>
 
-<b>⏱️ تایم‌فریم:</b> 1 دقیقه
+<b>⏱️ تایم‌فریم:</b> 4 ساعت
 <b>نوع سیگنال:</b> {cross_type}
 <b>قیمت فعلی:</b> ${price:,.0f}
 <b>زمان:</b> {time_str}
 
 <b>📊 مقادیر MACD:</b>
-MACD Line: {macd.iloc[-1]:.2f}
-Signal Line: {signal.iloc[-1]:.2f}
-<b>تفاوت:</b> {(macd.iloc[-1] - signal.iloc[-1]):.2f}
+MACD Line: {macd_val:.2f}
+Signal Line: {signal_val:.2f}
+<b>تفاوت:</b> {diff:.2f}
 
-<i>#BTC #MACD #1min #Test</i>"""
-        
+<i>#BTC #MACD #Signal</i>"""
         print(f"\n🎯 {cross_type} تشخیص داده شد!")
-        print(f"📝 پیام به تلگرام ارسال می‌شود...")
-        
-        # ارسال به تلگرام
-        send_telegram(message)
     else:
-        print("\n📭 هیچ کراس مکدی تشخیص داده نشد")
+        # تعیین وضعیت روند
+        if diff > 0:
+            trend = "صعودی 📈 (MACD بالای سیگنال)"
+            emoji = "🟢"
+        else:
+            trend = "نزولی 📉 (MACD زیر سیگنال)"
+            emoji = "🔴"
         
+        message = f"""<b>📊 گزارش وضعیت بیت‌کوین</b> {emoji}
+
+<b>⏱️ تایم‌فریم:</b> 4 ساعت
+<b>قیمت فعلی:</b> ${price:,.0f}
+<b>زمان:</b> {time_str}
+
+<b>📊 مقادیر MACD:</b>
+MACD Line: {macd_val:.2f}
+Signal Line: {signal_val:.2f}
+<b>تفاوت:</b> {diff:.2f}
+
+<b>📈 روند فعلی:</b> {trend}
+
+<i>هیچ کراس مکدی تشخیص داده نشد</i>
+<i>#BTC #MACD #Status</i>"""
+        print(f"\n📭 هیچ کراس مکدی تشخیص داده نشد")
+    
+    print(f"📝 ارسال پیام به تلگرام...")
+    send_telegram(message)
     print("=" * 50)
-    print("✅ تست کامل شد!")
 
 if __name__ == "__main__":
     main()
