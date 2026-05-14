@@ -12,7 +12,7 @@ def get_binance_4h_data():
     """دریافت داده 4 ساعته بیت‌کوین از Binance"""
     try:
         # دریافت 100 کندل 4 ساعته از Binance
-        url = "https://api.binance.com/api/v3/klines"
+        url = "https://data.binance.com/api/v3/klines"
         params = {
             "symbol": "BTCUSDT",
             "interval": "4h",
