@@ -1,12 +1,12 @@
-name: BTC MACD 4H Bot - Telegram
+name: BTC TEST - هر 5 دقیقه
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '*/5 * * * *'   # هر 5 دقیقه یکبار اجرا شود
   workflow_dispatch:
 
 jobs:
-  check-macd:
+  run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
