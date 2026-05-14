@@ -1,7 +1,11 @@
-name: تست ربات
+name: تست ربات بیت‌کوین (MACD)
 
 on:
   workflow_dispatch:
+
+env:
+  # این خط اخطار Node.js را غیرفعال می‌کند تا فقط خروجی ربات را ببینید
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   test:
@@ -11,5 +15,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install requests numpy pandas
-      - run: python btc_macd_bot.py
+      - name: نصب کتابخانه‌ها
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: اجرای ربات
+        run: python btc_macd_bot.py
